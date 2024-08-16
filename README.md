@@ -1,1 +1,1 @@
-# solar-system
+# solar-system: it's a fun project 
