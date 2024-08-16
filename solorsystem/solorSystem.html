@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Solar System</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #000;
+        height: 50vh;
+        width: 50vh;
+      }
+      #solar-system {
+        width: 100vw;
+        height: 100vh;
+        perspective: 1000px;
+      }
+      .planet,
+      .moon,
+      .satellite {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-style: preserve-3d;
+        border-radius: 50%;
+      }
+      .orbit,
+      .moon-orbit,
+      .satellite-orbit {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        transform-style: preserve-3d;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+      #sun {
+        width: 60px;
+        height: 60px;
+        background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00);
+        box-shadow: 0 0 60px #ff8c00;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .ring {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        transform-style: preserve-3d;
+        pointer-events: none; /* Prevent the rings from affecting planet interactions */
+      }
+      .asteroid {
+        position: absolute;
+        border-radius: 50%;
+        background-color: #888;
+      }
+      .satellite {
+        background-color: #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="solar-system">
+      <div id="sun" class="planet"></div>
+    </div>
+
+    <script>
+      const solarSystem = document.getElementById("solar-system");
+      const planets = [
+        {
+          name: "Mercury",
+          color: "#8c7e6d",
+          size: 10,
+          orbit: 100,
+          speed: 4.7,
+          tilt: 7,
+        },
+        {
+          name: "Venus",
+          color: "#e39e1c",
+          size: 15,
+          orbit: 140,
+          speed: 3.5,
+          tilt: 3.4,
+        },
+        {
+          name: "Earth",
+          color: "#6b93d6",
+          size: 16,
+          orbit: 180,
+          speed: 3,
+          tilt: 0,
+          moons: [
+            {
+              name: "Moon",
+              color: "#bbb",
+              size: 4,
+              orbit: 20,
+              speed: 5,
+            },
+          ],
+          satellites: [
+            {
+              name: "ISS",
+              size: 2,
+              orbit: 25,
+              speed: 15,
+            },
+            {
+              name: "Hubble",
+              size: 2,
+              orbit: 30,
+              speed: 12,
+            },
+            {
+              name: "Sputnik",
+              size: 2,
+              orbit: 35,
+              speed: 18,
+            },
+            {
+              name: "GPS",
+              size: 2,
+              orbit: 40,
+              speed: 10,
+            },
+          ],
+        },
+        {
+          name: "Mars",
+          color: "#c1440e",
+          size: 12,
+          orbit: 220,
+          speed: 2.4,
+          tilt: 1.85,
+          moons: [
+            {
+              name: "Phobos",
+              color: "#bbb",
+              size: 2,
+              orbit: 14,
+              speed: 8,
+            },
+            {
+              name: "Deimos",
+              color: "#ccc",
+              size: 2,
+              orbit: 20,
+              speed: 6,
+            },
+          ],
+        },
+        {
+          name: "Jupiter",
+          color: "#d8ca9d",
+          size: 36,
+          orbit: 300,
+          speed: 1.3,
+          tilt: 1.3,
+          moons: [
+            {
+              name: "Io",
+              color: "#ffdd88",
+              size: 4,
+              orbit: 45,
+              speed: 7,
+            },
+            {
+              name: "Europa",
+              color: "#bbccff",
+              size: 4,
+              orbit: 55,
+              speed: 5,
+            },
+          ],
+        },
+        {
+          name: "Saturn",
+          color: "#f4d47a",
+          size: 30,
+          orbit: 380,
+          speed: 0.9,
+          tilt: 2.48,
+          rings: true,
+          moons: [
+            {
+              name: "Titan",
+              color: "#d4a35a",
+              size: 6,
+              orbit: 50,
+              speed: 4,
+            },
+          ],
+        },
+        {
+          name: "Uranus",
+          color: "#c9eeff",
+          size: 24,
+          orbit: 440,
+          speed: 0.7,
+          tilt: 0.77,
+          rings: true,
+        },
+        {
+          name: "Neptune",
+          color: "#5b5ddf",
+          size: 22,
+          orbit: 500,
+          speed: 0.5,
+          tilt: 1.77,
+        },
+      ];
+
+      const getRandomSatellites = (satellites) => {
+        const shuffled = satellites.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, Math.floor(Math.random() * 4) + 1); // Pick 1 to 4 satellites randomly
+      };
+
+      const createMoon = (moon, planetEl) => {
+        const moonOrbit = document.createElement("div");
+        moonOrbit.className = "moon-orbit";
+        moonOrbit.style.width = `${moon.orbit * 2}px`;
+        moonOrbit.style.height = `${moon.orbit * 2}px`;
+        moonOrbit.style.marginLeft = `-${moon.orbit}px`;
+        moonOrbit.style.marginTop = `-${moon.orbit}px`;
+        moonOrbit.style.animationDuration = `${360 / moon.speed}s`;
+        moonOrbit.style.animationName = `${moon.name}-orbit`;
+
+        const moonEl = document.createElement("div");
+        moonEl.className = "moon";
+        moonEl.style.width = `${moon.size}px`;
+        moonEl.style.height = `${moon.size}px`;
+        moonEl.style.backgroundColor = moon.color;
+        moonEl.style.marginLeft = `${moon.orbit - moon.size / 2}px`;
+
+        moonOrbit.appendChild(moonEl);
+        planetEl.appendChild(moonOrbit);
+
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(
+          `@keyframes ${moon.name}-orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }`,
+          styleSheet.cssRules.length
+        );
+      };
+
+      const createSatellite = (satellite, planetEl) => {
+        const satelliteOrbit = document.createElement("div");
+        satelliteOrbit.className = "satellite-orbit";
+        satelliteOrbit.style.width = `${satellite.orbit * 2}px`;
+        satelliteOrbit.style.height = `${satellite.orbit * 2}px`;
+        satelliteOrbit.style.marginLeft = `-${satellite.orbit}px`;
+        satelliteOrbit.style.marginTop = `-${satellite.orbit}px`;
+        satelliteOrbit.style.animationDuration = `${360 / satellite.speed}s`;
+        satelliteOrbit.style.animationName = `${satellite.name}-orbit`;
+
+        const satelliteEl = document.createElement("div");
+        satelliteEl.className = "satellite";
+        satelliteEl.style.width = `${satellite.size}px`;
+        satelliteEl.style.height = `${satellite.size}px`;
+        satelliteEl.style.marginLeft = `${
+          satellite.orbit - satellite.size / 2
+        }px`;
+
+        satelliteOrbit.appendChild(satelliteEl);
+        planetEl.appendChild(satelliteOrbit);
+
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(
+          `@keyframes ${satellite.name}-orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }`,
+          styleSheet.cssRules.length
+        );
+      };
+
+      const createPlanet = (planet) => {
+        const orbit = document.createElement("div");
+        orbit.className = "orbit";
+        orbit.style.width = `${planet.orbit * 2}px`;
+        orbit.style.height = `${planet.orbit * 2}px`;
+        orbit.style.marginLeft = `-${planet.orbit}px`;
+        orbit.style.marginTop = `-${planet.orbit}px`;
+        orbit.style.animationDuration = `${360 / planet.speed}s`;
+        orbit.style.animationName = `${planet.name}-orbit`;
+        orbit.style.transform = `rotateX(${planet.tilt}deg)`;
+
+        const planetEl = document.createElement("div");
+        planetEl.className = "planet";
+        planetEl.style.width = `${planet.size}px`;
+        planetEl.style.height = `${planet.size}px`;
+        planetEl.style.backgroundColor = planet.color;
+        planetEl.style.marginLeft = `${planet.orbit - planet.size / 2}px`;
+
+        if (planet.rings) {
+          const ring = document.createElement("div");
+          ring.className = "ring";
+          ring.style.width = `${planet.size * 2}px`;
+          ring.style.height = `${planet.size * 0.6}px`;
+          ring.style.marginLeft = `${-planet.size}px`;
+          ring.style.marginTop = `${-planet.size * 0.3}px`;
+          ring.style.transform = `rotateX(75deg)`;
+          planetEl.appendChild(ring);
+        }
+
+        if (planet.moons) {
+          planet.moons.forEach((moon) => createMoon(moon, planetEl));
+        }
+
+        if (planet.satellites) {
+          const randomSatellites = getRandomSatellites(planet.satellites);
+          randomSatellites.forEach((satellite) =>
+            createSatellite(satellite, planetEl)
+          );
+        }
+
+        orbit.appendChild(planetEl);
+        solarSystem.appendChild(orbit);
+
+        const styleSheet = document.styleSheets[0];
+        styleSheet.insertRule(
+          `@keyframes ${planet.name}-orbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }`,
+          styleSheet.cssRules.length
+        );
+      };
+
+      planets.forEach(createPlanet);
+
+      // Create asteroid belt
+      const asteroidBeltOrbit = 260;
+      const numberOfAsteroids = 100;
+      for (let i = 0; i < numberOfAsteroids; i++) {
+        const angle = Math.random() * 360;
+        const distanceFromCenter =
+          asteroidBeltOrbit + (Math.random() - 0.5) * 20;
+
+        const asteroid = document.createElement("div");
+        asteroid.className = "asteroid";
+        asteroid.style.width = `${Math.random() * 5 + 2}px`;
+        asteroid.style.height = `${Math.random() * 5 + 2}px`;
+        asteroid.style.left = `calc(50% + ${
+          distanceFromCenter * Math.cos((angle * Math.PI) / 180)
+        }px)`;
+        asteroid.style.top = `calc(50% + ${
+          distanceFromCenter * Math.sin((angle * Math.PI) / 180)
+        }px)`;
+
+        solarSystem.appendChild(asteroid);
+      }
+    </script>
+  </body>
+</html>
